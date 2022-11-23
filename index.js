@@ -20,6 +20,35 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+const run = async () => {
+  try {
+    const appointmentOptionsCollection = client
+      .db("doctors_Portal")
+      .collection("appointmentOptions");
+
+    const bookingsCollection = client
+      .db("doctors_Portal")
+      .collection("bookings");
+
+    // get all appointmentOptions
+    app.get("/appointment", async (req, res) => {
+      const result = await appointmentOptionsCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    // post single booking
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+  } finally {
+  }
+};
+
+run().catch(console.dir);
+
 app.listen(port, () => {
   console.log(`Doctors portals server is running on port ${port}`);
 });
