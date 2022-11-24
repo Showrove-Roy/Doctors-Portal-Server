@@ -30,15 +30,52 @@ const run = async () => {
       .db("doctors_Portal")
       .collection("bookings");
 
-    // get all appointmentOptions
+    // get all appointment Options
     app.get("/appointment", async (req, res) => {
-      const result = await appointmentOptionsCollection.find({}).toArray();
+      const date = req.query.date;
+      const options = await appointmentOptionsCollection.find({}).toArray();
+      const bookingQuery = { appointment_date: date };
+      const alradyBooked = await bookingsCollection
+        .find(bookingQuery)
+        .toArray();
+      options.forEach((option) => {
+        const optionBooked = alradyBooked.filter(
+          (book) => book.treatment_name == option.name
+        );
+
+        const bookedSlots = optionBooked.map((book) => book.time_slot);
+        const remainingSlots = option.slots.filter(
+          (slot) => !bookedSlots.includes(slot)
+        );
+        option.slots = remainingSlots;
+      });
+
+      res.send(options);
+    });
+
+    // get single user booking data using email address
+    app.get("/bookings", async (req, res) => {
+      const date = req.query.date;
+      const email = req.query.email;
+      const query = { appointment_date: date, email: email };
+      const result = await bookingsCollection.find(query).toArray();
       res.send(result);
     });
 
     // post single booking
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
+      const query = {
+        appointment_date: booking.appointment_date,
+        email: booking.email,
+        treatment_name: booking.treatment_name,
+      };
+
+      const alradyBooked = await bookingsCollection.find(query).toArray();
+      if (alradyBooked.length) {
+        const message = `You already have booked ${booking.treatment_name} service on ${booking.appointment_date}`;
+        return res.send({ acknowledged: false, message });
+      }
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
