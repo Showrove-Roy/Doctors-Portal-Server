@@ -22,13 +22,20 @@ const client = new MongoClient(uri, {
 
 const run = async () => {
   try {
+    // Treatments collection
     const appointmentOptionsCollection = client
       .db("doctors_Portal")
       .collection("appointmentOptions");
 
+    // Users Booking collections
     const bookingsCollection = client
       .db("doctors_Portal")
       .collection("bookings");
+
+    // Users info collections
+    const userInfoCollection = client
+      .db("doctors_Portal")
+      .collection("userInfo");
 
     // get all appointment Options
     app.get("/appointment", async (req, res) => {
@@ -77,6 +84,14 @@ const run = async () => {
         return res.send({ acknowledged: false, message });
       }
       const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    // post user info
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const result = await userInfoCollection.insertOne(user);
       res.send(result);
     });
   } finally {
