@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -85,7 +85,6 @@ const run = async () => {
       if (decodedEmail !== email) {
         return res.status(403).send({ message: "forbidden access" });
       }
-
       const query = { appointment_date: date, email: email };
       const result = await bookingsCollection.find(query).toArray();
       res.send(result);
@@ -112,7 +111,45 @@ const run = async () => {
     // post user info
     app.post("/users", async (req, res) => {
       const user = req.body;
+      const query = { email: user.email };
+      const storedUser = await userInfoCollection.findOne(query);
+      if (storedUser?.email === user?.email) {
+        return res.send({ message: "user found" });
+      }
       const result = await userInfoCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // Get user info
+    app.get("/users", async (req, res) => {
+      const users = await userInfoCollection.find({}).toArray();
+      res.send(users);
+    });
+
+    // get admin make admin
+    app.put("/users/admin/:id", verifyJWT, async (req, res) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await userInfoCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+
+      const result = await userInfoCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+
       res.send(result);
     });
 
